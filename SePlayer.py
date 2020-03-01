@@ -1,36 +1,64 @@
-import re,os,sys
-from selenium import webdriver
-from pathlib import Path
-from random import choice
+import os,sys,SeLector
+from selenium.webdriver import Firefox
+from selenium.webdriver.firefox.options import Options
+from time import sleep
 
-FILE_EXTENSIONS = ".avi$|.mov$|.mp4$|.flv$|.wmv$"
 
-def instanceWriter(name,window):
-    with open(f'.cache/MULTIPLAYER_{window}', 'w') as f:
-        f.write(name)
+'''This method shall an int (window) as args'''
+def instanceReader(window):
+    if os.path.isfile(f".cache/SEPLAYER_{window}") == False:
+        return "file:///fff"
+    with open(f'.cache/SEPLAYER_{window}', 'r') as f:
+        file_name = f.read()
+        return file_name
 
-def videoSelector2(directory=None,filter=""):
-    if directory == None:
-        directory = (os.path.dirname(os.path.realpath(__file__)))
-    file_list = os.listdir(directory)
-    pattern = ".avi$|.mov$|.mp4$|.flv$|.wmv$"
+def resolutionParser(window):
+    resolution_list = []
+    return resolution_list
 
-    final_list = [x for x in file_list if \
-        ((re.search(pattern, x)) and (filter.lower() in x.lower()))]
-    choice_file = choice(final_list)
-    return choice_file
 
-def videoSelector(directory="./",substring=""):
-    file_list = os.listdir(directory)
-    final_list = [i for i in file_list if((re.search(FILE_EXTENSIONS, i)) and (substring.lower() in i.lower()))]
-    choice_file = choice(final_list)
-    return choice_file
+'''
+This method shall take an int (window) as args.
+1.) The correct resolution list shall be gained from the resolutionParser method
+2.) A webdriver of the correct size/position shall be launched with the default loading page
+3.) A while(true) loop shall be launched
+    a.) A value named "temp" shall be read from the corresponding .cache/SP_{window} file
+    b.) temp shall be compared to file_name
+        IF EQUAL the program shall sleep for 1 second and restart
+    c.) file_name shall be set equal to temp
+    d.) the webdriver shall load the new file_name
+'''
+def driverLauncher(window):
+    
+    resolution_list = resolutionParser(window)
+    file_name = instanceReader(window)
+    print(file_name)
+    #start webdriver of correct size/position
+    opts = Options()
+    opts.add_argument("--kiosk")
+
+    first_pass = True
+
+    with Firefox(options=opts) as driver:
+        driver.get(file_name)
+        if first_pass:
+            driver.set_window_position(100,100)
+
+            first_pass = False
+
+        while(True):
+            temp = instanceReader(window)
+            if file_name == temp:
+                sleep(1)
+                continue
+            file_name = temp
+            driver.get(file_name)
+
+
+
 
 if __name__ == "__main__":
-    directory, substring = "./", ""
-    for i in sys.argv[1:]:
-        if "-d=" in i[:3]:
-            directory = i[3:]
+    window = int(sys.argv[1])
 
+    driverLauncher(window)
     
-    print(videoSelector(directory, substring))
